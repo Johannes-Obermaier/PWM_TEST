@@ -185,9 +185,10 @@ void generateSinusTable() {
 
 
 // creat Main Task
-static void vMainTaskCallback( TimerHandle_t xTimer )
+static void vMyTask(void *pvParameters)
 {
-     //Werte aus der Sinustabelle
+    while(1){
+        //Werte aus der Sinustabelle
         float left_motor_speed_A = sinusTable[tableIndex_A];
         float left_motor_speed_B = sinusTable[tableIndex_B];
         float left_motor_speed_C = sinusTable[tableIndex_C];
@@ -198,23 +199,23 @@ static void vMainTaskCallback( TimerHandle_t xTimer )
 
         // Führe eine Verzögerung aus (optional, um die Geschwindigkeit zu steuern)
        
-       // vTaskDelay(pdMS_TO_TICKS(1));
+
+        vTaskDelay(pdMS_TO_TICKS(1));
         //vTaskDelay(pdMS_TO_TICKS(70));
         
-      // printf("Phase A: %d und %f \n", tableIndex_A, sinusTable[tableIndex_A]);
-       //printf("Phase B: %d und %f \n", tableIndex_B, sinusTable[tableIndex_B]);
+        //printf("Phase A: %d und %f \n", tableIndex_A, sinusTable[tableIndex_A]);
+        //printf("Phase B: %d und %f \n", tableIndex_B, sinusTable[tableIndex_B]);
         //printf("Phase C: %d und %f \n", tableIndex_C, sinusTable[tableIndex_C]);
         
         motor_control_left(left_motor_speed_A, left_motor_speed_B, left_motor_speed_C);
         motor_control_right(right_motor_speed_A , right_motor_speed_B, right_motor_speed_C);
-       // mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 50);
+        //mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 50);
         //mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, 50);
         
-
         tableIndex_A = (tableIndex_A + 1) % SIN_TABLE_SIZE;
         tableIndex_B = (tableIndex_B + 1) % SIN_TABLE_SIZE;
         tableIndex_C = (tableIndex_C + 1) % SIN_TABLE_SIZE;
-
+    }
 }
 
 void app_main() {
@@ -229,24 +230,29 @@ void app_main() {
     generateSinusTable();
     gpio_set_level(LED_BLUE, 1);
     
-     tableIndex_A = 0;
-     tableIndex_B = SIN_TABLE_SIZE/3;
-     tableIndex_C = tableIndex_B*2;
+    tableIndex_A = 0;
+    tableIndex_B = SIN_TABLE_SIZE/3;
+    tableIndex_C = tableIndex_B*2;
 
     //vTaskStartScheduler();
     //xTaskCreate(?, "TaskName", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES, NULL);
     //vTaskStartScheduler();
 
-    
-    TimerHandle_t xMainTimer = xTimerCreate(    ( const char * ) "MainTask",
-                                                MAIN_PERIOD_MS,
-                                                pdTRUE, // periodic timer, so xAutoReload is set to pdTRUE.
-                                                ( void * ) 0,
-                                                vMainTaskCallback
-                                        );
+    // Erstellen und starten des Tasks
+    xTaskCreate(
+        vMyTask,         // Pointer auf die Task-Funktion
+        "MyTask",        // Name des Tasks (für Debugging-Zwecke)
+        configMINIMAL_STACK_SIZE,  // Stack-Größe
+        NULL,            // Parameter für den Task
+        tskIDLE_PRIORITY, // Priorität des Tasks
+        NULL             // Handle für den Task (nicht benötigt)
+    );
 
-    // Start the Task timer
-    xTimerStart( xMainTimer, 0 );
+    // Starten des FreeRTOS-Schedulers
+    vTaskStartScheduler();
+
+
+    // TODO: nicht mehr nötig, wenn ein andere HauptTask existiert
     while(1){
         vTaskDelay(pdMS_TO_TICKS(10));
     }
