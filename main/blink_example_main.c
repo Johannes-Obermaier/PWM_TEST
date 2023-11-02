@@ -130,7 +130,7 @@ void pwm_init()
 
     mcpwm_init(MCPWM_UNIT_0,MCPWM_TIMER_0, &pwm_config);    //Initialisierung mit den oberen Parametern
     mcpwm_init(MCPWM_UNIT_0,MCPWM_TIMER_1, &pwm_config);                                                      //wo kommt MCPWM_TIMER_0 her?
-    mcpwm_init(MCPWM_UNIT_0,MCPWM_TIMER_2, &pwm_config);    //Initialisierung mit den oberen Parametern
+    mcpwm_init(MCPWM_UNIT_0,MCPWM_TIMER_2, &pwm_config);    //Initialisierung mit den oberen Parameternnnn
     mcpwm_init(MCPWM_UNIT_1,MCPWM_TIMER_0, &pwm_config);
     mcpwm_init(MCPWM_UNIT_1,MCPWM_TIMER_1, &pwm_config);
     mcpwm_init(MCPWM_UNIT_1,MCPWM_TIMER_2, &pwm_config);
