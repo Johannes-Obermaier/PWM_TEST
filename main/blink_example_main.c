@@ -261,6 +261,12 @@ void pwm_init(){
     ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, BLDC_SPEED_UPDATE_PERIOD_US));
 
+    ESP_LOGI(TAG, "Start the MCPWM timer");
+    ESP_ERROR_CHECK(mcpwm_timer_enable(timer_left));
+    ESP_ERROR_CHECK(mcpwm_timer_enable(timer_right));
+    ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer_left, MCPWM_TIMER_START_NO_STOP));
+    ESP_ERROR_CHECK(mcpwm_timer_start_stop(timer_right, MCPWM_TIMER_START_NO_STOP));
+
 
     ESP_LOGI(TAG, "Motor init done.");    
 }
