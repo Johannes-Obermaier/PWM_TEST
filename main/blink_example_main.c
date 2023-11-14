@@ -75,6 +75,7 @@ static void update_motor_pwm_cb()
     uint32_t right_motor_speed_B = sinusTable[tableIndex_B];
     uint32_t right_motor_speed_C = sinusTable[tableIndex_C];
 
+    
     // Führe eine Verzögerung aus (optional, um die Geschwindigkeit zu steuern)
        
     // vTaskDelay(pdMS_TO_TICKS(1));
@@ -94,19 +95,20 @@ static void update_motor_pwm_cb()
     ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparators_right[2], right_motor_speed_C));
     // mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 50);
     //mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, 50);
-        
+
+    //printf("Phase C:%d   %lu    %lu  \n",tableIndex_C, right_motor_speed_C, sinusTable[tableIndex_C] );
 
     tableIndex_A = (tableIndex_A + 1);
     tableIndex_B = (tableIndex_B + 1);
     tableIndex_C = (tableIndex_C + 1);
 
-    if (tableIndex_A > SIN_TABLE_SIZE) {
+    if (tableIndex_A >= SIN_TABLE_SIZE) {
         tableIndex_A = 0;
     }
-    if (tableIndex_B > SIN_TABLE_SIZE) {
+    if (tableIndex_B >= SIN_TABLE_SIZE) {
         tableIndex_B = 0;
     }
-    if (tableIndex_C > SIN_TABLE_SIZE) {
+    if (tableIndex_C >= SIN_TABLE_SIZE) {
         tableIndex_C = 0;
     }
 
@@ -167,16 +169,16 @@ void pwm_init(){
         ESP_ERROR_CHECK(mcpwm_new_comparator(operators_left[i], &compare_config, &comparators_left[i]));
         ESP_ERROR_CHECK(mcpwm_new_comparator(operators_right[i], &compare_config, &comparators_right[i]));
         // set compare value to 0, we will adjust the speed in a period timer callback
-        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparators_left[i], 0));
-        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparators_right[i], 0));
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparators_left[i], 250));
+        ESP_ERROR_CHECK(mcpwm_comparator_set_compare_value(comparators_right[i], 250));
     }
 
 
     ESP_LOGI(TAG, "Create PWM generators");
-    mcpwm_gen_handle_t generators_left[3][2] = {};
-    mcpwm_gen_handle_t generators_right[3][2] = {};
-    mcpwm_generator_config_t gen_config_left = {};
-    mcpwm_generator_config_t gen_config_right = {};
+    mcpwm_gen_handle_t generators_left[3][2];
+    mcpwm_gen_handle_t generators_right[3][2];
+    mcpwm_generator_config_t gen_config_left;
+    mcpwm_generator_config_t gen_config_right;
     const int gen_gpios_left[3][2] = {
         {MOTOR_LEFT_A_PMOS, MOTOR_LEFT_A_NMOS},
         {MOTOR_LEFT_B_PMOS, MOTOR_LEFT_B_NMOS},
@@ -284,8 +286,8 @@ void generateSinusTable() {
 void app_main() {
 
     // Initialisierung PWM für Motoren
-    pwm_init();
     generateSinusTable();
+    pwm_init();
     gpio_set_level(LED_BLUE, 1);
     
     tableIndex_A = 0;
