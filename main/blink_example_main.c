@@ -196,6 +196,23 @@ void pwm_init(){
         }
     }
 
+    ESP_LOGI(TAG, "Set generator actions");
+    // gen_high and gen_low output the same waveform after the following configuration
+    // we will use the dead time module to add edge delay, also make gen_high and gen_low complementary
+    for (int i = 0; i < 3; i++) {
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(generators_left[i][BLDC_MCPWM_GEN_INDEX_NMOS], MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(generators_right[i][BLDC_MCPWM_GEN_INDEX_NMOS], MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
+
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(generators_left[i][BLDC_MCPWM_GEN_INDEX_NMOS], MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, comparators_left[i], MCPWM_GEN_ACTION_LOW)));
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(generators_right[i][BLDC_MCPWM_GEN_INDEX_NMOS], MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, comparators_right[i], MCPWM_GEN_ACTION_LOW)));
+
+
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(generators_left[i][BLDC_MCPWM_GEN_INDEX_PMOS], MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(generators_right[i][BLDC_MCPWM_GEN_INDEX_PMOS], MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH)));
+
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(generators_left[i][BLDC_MCPWM_GEN_INDEX_PMOS], MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, comparators_left[i], MCPWM_GEN_ACTION_LOW)));;
+        ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(generators_right[i][BLDC_MCPWM_GEN_INDEX_PMOS], MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, comparators_right[i], MCPWM_GEN_ACTION_LOW)));;
+    }
 
     ESP_LOGI(TAG, "Setup deadtime");
     // Active LOW https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/mcpwm.html?highlight=mcpwm#active-low
