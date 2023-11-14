@@ -222,7 +222,7 @@ void pwm_init(){
     mcpwm_dead_time_config_t dt_config_NMOS = {
         .posedge_delay_ticks = 0,
         .negedge_delay_ticks = PWM_DEADTIME_MOTOR, // delay the PWM waveform on the falling edge
-        .flags.invert_output = true,
+        .flags.invert_output = false,
     };
     for (int i = 0; i < 3; i++) {
         ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(generators_left[i][BLDC_MCPWM_GEN_INDEX_NMOS], generators_left[i][BLDC_MCPWM_GEN_INDEX_NMOS], &dt_config_NMOS));
@@ -232,7 +232,7 @@ void pwm_init(){
     mcpwm_dead_time_config_t dt_config_PMOS = {
         .posedge_delay_ticks = PWM_DEADTIME_MOTOR, // delay the PWM waveform on the rising edge
         .negedge_delay_ticks = 0,
-        .flags.invert_output = true,
+        .flags.invert_output = false,
     };
     for (int i = 0; i < 3; i++) {
         ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(generators_left[i][BLDC_MCPWM_GEN_INDEX_PMOS], generators_left[i][BLDC_MCPWM_GEN_INDEX_PMOS], &dt_config_PMOS));
