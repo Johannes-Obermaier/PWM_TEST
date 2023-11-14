@@ -9,6 +9,7 @@
 #include "esp_timer.h"
 // #include "soc/mcpwm_periph.h"
 #include "math.h"
+#include "esp_timer.h"
 
 static const char *TAG = "MCPWM";
 
@@ -42,7 +43,7 @@ static const char *TAG = "MCPWM";
 
 #define LED_BLUE 4
 
-#define MAIN_PERIOD_MS           pdMS_TO_TICKS( 1 )
+#define MAIN_PERIOD_MS           pdMS_TO_TICKS(1)
 #define PI 3.14159265358979323846
 #define SIN_TABLE_SIZE 99
 uint32_t sinusTable[SIN_TABLE_SIZE];
@@ -55,6 +56,7 @@ int tableIndex_C = 0;
 #define BLDC_MCPWM_TIMER_RESOLUTION_HZ 10000000 // 10MHz, 1 tick = 0.1us
 #define BLDC_MCPWM_PERIOD              500      // 50us, 20KHz
 #define BLDC_SPEED_UPDATE_PERIOD_US    250   // 250us, 4kHz
+#define PWM_DEADTIME_MOTOR 10
 
 
 // comparators for motor PWM signal
@@ -65,13 +67,13 @@ mcpwm_cmpr_handle_t comparators_right[3];
 static void update_motor_pwm_cb()
 {
     //Werte aus der Sinustabelle
-    float left_motor_speed_A = sinusTable[tableIndex_A];
-    float left_motor_speed_B = sinusTable[tableIndex_B];
-    float left_motor_speed_C = sinusTable[tableIndex_C];
+    uint32_t left_motor_speed_A = sinusTable[tableIndex_A];
+    uint32_t left_motor_speed_B = sinusTable[tableIndex_B];
+    uint32_t left_motor_speed_C = sinusTable[tableIndex_C];
         
-    float right_motor_speed_A = sinusTable[tableIndex_A];
-    float right_motor_speed_B = sinusTable[tableIndex_B];
-    float right_motor_speed_C = sinusTable[tableIndex_C];
+    uint32_t right_motor_speed_A = sinusTable[tableIndex_A];
+    uint32_t right_motor_speed_B = sinusTable[tableIndex_B];
+    uint32_t right_motor_speed_C = sinusTable[tableIndex_C];
 
     // Führe eine Verzögerung aus (optional, um die Geschwindigkeit zu steuern)
        
@@ -94,9 +96,20 @@ static void update_motor_pwm_cb()
     //mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, 50);
         
 
-    tableIndex_A = (tableIndex_A + 1) % SIN_TABLE_SIZE;
-    tableIndex_B = (tableIndex_B + 1) % SIN_TABLE_SIZE;
-    tableIndex_C = (tableIndex_C + 1) % SIN_TABLE_SIZE;
+    tableIndex_A = (tableIndex_A + 1);
+    tableIndex_B = (tableIndex_B + 1);
+    tableIndex_C = (tableIndex_C + 1);
+
+    if (tableIndex_A > SIN_TABLE_SIZE) {
+        tableIndex_A = 0;
+    }
+    if (tableIndex_B > SIN_TABLE_SIZE) {
+        tableIndex_B = 0;
+    }
+    if (tableIndex_C > SIN_TABLE_SIZE) {
+        tableIndex_C = 0;
+    }
+
 
 }
 
@@ -185,7 +198,7 @@ void pwm_init(){
     // Configuration for NMOS Output
     mcpwm_dead_time_config_t dt_config_NMOS = {
         .posedge_delay_ticks = 0,
-        .negedge_delay_ticks = 10, // delay the PWM waveform on the falling edge
+        .negedge_delay_ticks = PWM_DEADTIME_MOTOR, // delay the PWM waveform on the falling edge
         .flags.invert_output = true,
     };
     for (int i = 0; i < 3; i++) {
@@ -194,7 +207,7 @@ void pwm_init(){
     }
     // Configuration for PMOS output
     mcpwm_dead_time_config_t dt_config_PMOS = {
-        .posedge_delay_ticks = 10, // delay the PWM waveform on the rising edge
+        .posedge_delay_ticks = PWM_DEADTIME_MOTOR, // delay the PWM waveform on the rising edge
         .negedge_delay_ticks = 0,
         .flags.invert_output = true,
     };
@@ -249,13 +262,8 @@ void generateSinusTable() {
 
 void app_main() {
 
-
-
-    
     // Initialisierung PWM für Motoren
     pwm_init();
-    gpio_set_level(LED_BLUE, 0);
-
     generateSinusTable();
     gpio_set_level(LED_BLUE, 1);
     
@@ -269,7 +277,8 @@ void app_main() {
 
     
     while(1){
-        vTaskDelay(pdMS_TO_TICKS(10));
+        
+       vTaskDelay(pdMS_TO_TICKS(1));
     }
         
     
