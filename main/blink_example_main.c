@@ -9,7 +9,7 @@
 #include "esp_timer.h"
 // #include "soc/mcpwm_periph.h"
 #include "math.h"
-#include "esp_timer.h"
+
 
 static const char *TAG = "MCPWM";
 
@@ -121,7 +121,9 @@ void pwm_init(){
     // TODO: PCB Design: It would be good if we could deactivate all MOSFETS with one pin
 
     ESP_LOGI(TAG, "Create MCPWM timer");
-    mcpwm_timer_handle_t timer = NULL;
+    mcpwm_timer_handle_t timer_left = NULL;
+    mcpwm_timer_handle_t timer_right = NULL;
+
     // TODO: is it possible to use the timer of group_id 0 with a comparator of group_id 1?
     // TODO: if there is a problem with the motor on the right, this could be the reason!!!
     mcpwm_timer_config_t timer_config = {
@@ -131,7 +133,9 @@ void pwm_init(){
         .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
         .period_ticks = BLDC_MCPWM_PERIOD,
     };
-    ESP_ERROR_CHECK(mcpwm_new_timer(&timer_config, &timer));
+    ESP_ERROR_CHECK(mcpwm_new_timer(&timer_config, &timer_left));
+    timer_config.group_id = 1;
+    ESP_ERROR_CHECK(mcpwm_new_timer(&timer_config, &timer_right));
 
 
     ESP_LOGI(TAG, "Create MCPWM operator");
@@ -150,8 +154,8 @@ void pwm_init(){
 
     ESP_LOGI(TAG, "Connect operators to the same timer");
     for (int i = 0; i < 3; i++) {
-        ESP_ERROR_CHECK(mcpwm_operator_connect_timer(operators_left[i], timer));
-        ESP_ERROR_CHECK(mcpwm_operator_connect_timer(operators_right[i], timer));
+        ESP_ERROR_CHECK(mcpwm_operator_connect_timer(operators_left[i], timer_left));
+        ESP_ERROR_CHECK(mcpwm_operator_connect_timer(operators_right[i], timer_right));
     }
 
 
@@ -216,7 +220,7 @@ void pwm_init(){
         ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(generators_right[i][BLDC_MCPWM_GEN_INDEX_PMOS], generators_right[i][BLDC_MCPWM_GEN_INDEX_PMOS], &dt_config_PMOS));
     }
 
-    ESP_LOGI(TAG, "Turn off all the gates");
+    /*ESP_LOGI(TAG, "Turn off all the gates");
     // TODO: !!!ACHTUNG!!! Das hier muss erst getestet werden, und dann kann die funktion entfernt werden für den Betrieb muss set_force_level deaktiviert sein!!!
     // TODO: das Ergebniss von dieser Funktion sollte sein, dass alle PMOS / IRLM2244 HIGH sind (IO 6, 8, 10, 36, 38, 40)
     // TODO: das Ergebniss von dieser Funktion sollte sein, dass alle NMOS / IRLM6244 LOW sind (IO 7, 9, 11, 35, 37, 39)
@@ -229,7 +233,7 @@ void pwm_init(){
         ESP_ERROR_CHECK(mcpwm_generator_set_force_level(generators_left[i][BLDC_MCPWM_GEN_INDEX_NMOS], 1, true));
         ESP_ERROR_CHECK(mcpwm_generator_set_force_level(generators_right[i][BLDC_MCPWM_GEN_INDEX_NMOS], 1, true));
     }
-
+*/
     ESP_LOGI(TAG, "Start a timer to adjust motor pwm periodically");
     esp_timer_handle_t periodic_timer = NULL;
     const esp_timer_create_args_t periodic_timer_args = {
@@ -251,9 +255,9 @@ void generateSinusTable() {
         float angle = (2 * PI * i) / SIN_TABLE_SIZE;
         
         // TODO: Better use round instead of casting to uint32_t
-        sinusTable[i] = (uint32_t)(BLDC_MCPWM_PERIOD * (1.0 + sin(angle))); 
+        sinusTable[i] = (uint32_t)(BLDC_MCPWM_PERIOD/2 * (1.0 + sin(angle))); 
        // vTaskDelay(pdMS_TO_TICKS(2));
-        //printf("%d angle: %f sinustable: %f \n", i, angle, sinusTable[i]);
+        printf("%d angle: %f sinustable: %lu \n", i, angle, sinusTable[i]);
       
       
     }
