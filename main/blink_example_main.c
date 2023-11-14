@@ -8,6 +8,7 @@
 #include "freertos/timers.h"   // Software timer related API prototypes.
 #include "soc/mcpwm_periph.h"
 #include "math.h"
+#include "esp_timer.h"
 
 
 //H=High= (P-kanal Mosfet)
@@ -34,9 +35,9 @@
 
 #define LED_BLUE 4
 
-#define MAIN_PERIOD_MS           pdMS_TO_TICKS( 1 )
+#define MAIN_PERIOD_MS           pdMS_TO_TICKS(1)
 #define PI 3.14159265358979323846
-#define SIN_TABLE_SIZE 99
+#define SIN_TABLE_SIZE 6
 float sinusTable[SIN_TABLE_SIZE];
 int tableIndex_A = 0;
 int tableIndex_B = 0;
@@ -45,6 +46,7 @@ int tableIndex_C = 0;
 
 
 #define PWM_FREQ_HZ_MOTOR 20000
+#define PWM_DEADTIME_MOTOR 3
 
 
 void pwm_init()
@@ -136,7 +138,13 @@ void pwm_init()
     mcpwm_init(MCPWM_UNIT_1,MCPWM_TIMER_2, &pwm_config);
 
 
- mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_ACTIVE_LOW_MODE, 10, 10);
+ mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_ACTIVE_LOW_MODE, PWM_DEADTIME_MOTOR, PWM_DEADTIME_MOTOR);
+  mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_ACTIVE_LOW_MODE, PWM_DEADTIME_MOTOR, PWM_DEADTIME_MOTOR);
+   mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_2, MCPWM_ACTIVE_LOW_MODE, PWM_DEADTIME_MOTOR, PWM_DEADTIME_MOTOR);
+    mcpwm_deadtime_enable(MCPWM_UNIT_1, MCPWM_TIMER_0, MCPWM_ACTIVE_LOW_MODE, PWM_DEADTIME_MOTOR, PWM_DEADTIME_MOTOR);
+     mcpwm_deadtime_enable(MCPWM_UNIT_1, MCPWM_TIMER_1, MCPWM_ACTIVE_LOW_MODE, PWM_DEADTIME_MOTOR, PWM_DEADTIME_MOTOR);
+      mcpwm_deadtime_enable(MCPWM_UNIT_1, MCPWM_TIMER_2, MCPWM_ACTIVE_LOW_MODE, PWM_DEADTIME_MOTOR, PWM_DEADTIME_MOTOR);
+
  //mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_ACTIVE_HIGH_MODE, 200, 200);
 // mcpwm_deadtime_enable(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_ACTIVE_RED_FED_FROM_PWMXA, 200, 200);
 
@@ -175,16 +183,16 @@ void generateSinusTable() {
         float angle = (2 * PI * i) / SIN_TABLE_SIZE;
         
         sinusTable[i] = 50.0 * (1.0 + sin(angle)); 
-       // vTaskDelay(pdMS_TO_TICKS(2));
+        //vTaskDelay(pdMS_TO_TICKS(2));
         //printf("%d angle: %f sinustable: %f \n", i, angle, sinusTable[i]);
-      
-      
+    
     }
     printf("sinustable created\n");
 }
 
 
 // creat Main Task
+
 static void vMainTaskCallback( TimerHandle_t xTimer )
 {
      //Werte aus der Sinustabelle
@@ -196,36 +204,43 @@ static void vMainTaskCallback( TimerHandle_t xTimer )
     	float right_motor_speed_B = sinusTable[tableIndex_B];
         float right_motor_speed_C = sinusTable[tableIndex_C];
 
-        // Führe eine Verzögerung aus (optional, um die Geschwindigkeit zu steuern)
-       
-       // vTaskDelay(pdMS_TO_TICKS(1));
-        //vTaskDelay(pdMS_TO_TICKS(70));
-        
-      // printf("Phase A: %d und %f \n", tableIndex_A, sinusTable[tableIndex_A]);
-       //printf("Phase B: %d und %f \n", tableIndex_B, sinusTable[tableIndex_B]);
-        //printf("Phase C: %d und %f \n", tableIndex_C, sinusTable[tableIndex_C]);
+       // printf("Phase A: %d und %f \n", tableIndex_A, sinusTable[tableIndex_A]);
+      //  printf("Phase B: %d und %f \n", tableIndex_B, sinusTable[tableIndex_B]);
+       // printf("Phase C: %d und %f \n", tableIndex_C, sinusTable[tableIndex_C]);
         
         motor_control_left(left_motor_speed_A, left_motor_speed_B, left_motor_speed_C);
         motor_control_right(right_motor_speed_A , right_motor_speed_B, right_motor_speed_C);
-       // mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 50);
+
+        //motor_control_right(0 , 0, 0);
+        //motor_control_left(0, 0, 0);
+        //mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 50);
         //mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, 50);
         
+        tableIndex_A = (tableIndex_A + 1);
+        tableIndex_B = (tableIndex_B + 1);
+        tableIndex_C = (tableIndex_C + 1);
 
-        tableIndex_A = (tableIndex_A + 1) % SIN_TABLE_SIZE;
-        tableIndex_B = (tableIndex_B + 1) % SIN_TABLE_SIZE;
-        tableIndex_C = (tableIndex_C + 1) % SIN_TABLE_SIZE;
+       if (tableIndex_A > SIN_TABLE_SIZE) {
+         tableIndex_A = 0;
+        }
+          if (tableIndex_B > SIN_TABLE_SIZE) {
+         tableIndex_B = 0;
+        }
+          if (tableIndex_C > SIN_TABLE_SIZE) {
+         tableIndex_C = 0;
+        }
+
+
 
 }
 
+
+
+
 void app_main() {
 
-
-
-    
     // Initialisierung PWM für Motoren
     pwm_init();
-    gpio_set_level(LED_BLUE, 0);
-
     generateSinusTable();
     gpio_set_level(LED_BLUE, 1);
     
@@ -233,11 +248,6 @@ void app_main() {
      tableIndex_B = SIN_TABLE_SIZE/3;
      tableIndex_C = tableIndex_B*2;
 
-    //vTaskStartScheduler();
-    //xTaskCreate(?, "TaskName", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES, NULL);
-    //vTaskStartScheduler();
-
-    
     TimerHandle_t xMainTimer = xTimerCreate(    ( const char * ) "MainTask",
                                                 MAIN_PERIOD_MS,
                                                 pdTRUE, // periodic timer, so xAutoReload is set to pdTRUE.
@@ -247,8 +257,12 @@ void app_main() {
 
     // Start the Task timer
     xTimerStart( xMainTimer, 0 );
+
+
+
     while(1){
-        vTaskDelay(pdMS_TO_TICKS(10));
+        
+       vTaskDelay(pdMS_TO_TICKS(1));
     }
         
     
